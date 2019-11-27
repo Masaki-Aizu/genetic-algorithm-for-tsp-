@@ -1,9 +1,11 @@
 # coding:utf-8
-
 import pandas as pd
 import random as rnd
 import math
+import time
+from memory_profiler import profile
 
+t1 = time.time()
     
 def generate_route(x, population):
 
@@ -40,10 +42,13 @@ def evaluate(position, routes, loop=0):
     # print(evaluate_value)
 
     best_value = min(evaluate_value)
+    best_index = evaluate_value.index(best_value)
+    # print(best_index)
+
+    t2 = time.time()
+    print('最優秀固体 %d世代目 : %f ,　実行時間 : %f' %(loop + 1, best_value, t2-t1))
     
-    print('最優秀固体 %d世代目 : %f' %(loop + 1, best_value) )
-    
-    return evaluate_value
+    return evaluate_value, best_value
 
 def tournament_selection(routes, evaluate_value, tournament_num, tournament_size):
 
@@ -99,44 +104,57 @@ def mutation(ind, mutation_pro):
 
     return ind
 
-population = 200  # 個体数
-generation_num = 200  # 世代数
+@profile
+def main():
+    population = 200  # 個体数
+    generation_num = 400  # 世代数
 
-tournament_size = 10  # トーナメント選択のパラメータ
-tournament_num = 2
+    tournament_size = 10  # トーナメント選択のパラメータ
+    tournament_num = 2
 
-cross_pro = 50  # 交叉の確率
+    cross_pro = 50  # 交叉の確率
 
-mutation_pro = 3  # 突然変異の確率
+    mutation_pro = 8  # 突然変異の確率
 
-# データ読み込み: 座標(x, y)
-X = pd.read_table("sample.txt", sep = "\t")
-x = X.values
+    best_value_list = [] # 最適解格納
 
-# create initial solutions
-position, routes = generate_route(x, population)
-# print(position, routes)
+    # データ読み込み: 座標(x, y)
+    X = pd.read_table("sample3.txt", sep = "\t", header = None)
+    x = X.values
 
-# evaluate initial solutions
-evaluate_value = evaluate(position, routes)
+    # print(x)
 
-for loop in range(generation_num - 1):
-    # tournament selection
-    select_pop = tournament_selection(routes, evaluate_value, tournament_num,  tournament_size)
+    # create initial solutions
+    position, routes = generate_route(x, population)
+    # print(position, routes)
 
-    next_routes = []
-    while len(next_routes) <= population:
-        # crossover
-        ind_1, ind_2 = crossover(select_pop, cross_pro)
+    # evaluate initial solutions
+    evaluate_value, best_value = evaluate(position, routes)
+    print("最適解: %f" %(best_value))
+    best_value_list.append(best_value)
 
-        # mutation
-        ind_1 = mutation(ind_1, mutation_pro)
-        ind_2 = mutation(ind_2, mutation_pro)
-        next_routes.append(ind_1)
-        next_routes.append(ind_2)
-    
-    # update
-    routes = next_routes
-    evaluate_value = evaluate(position, next_routes, loop + 1)
+    for loop in range(generation_num - 1):
+        # tournament selection
+        select_pop = tournament_selection(routes, evaluate_value, tournament_num,  tournament_size)
+
+        next_routes = []
+        while len(next_routes) <= population:
+            # crossover
+            ind_1, ind_2 = crossover(select_pop, cross_pro)
+
+            # mutation
+            ind_1 = mutation(ind_1, mutation_pro)
+            ind_2 = mutation(ind_2, mutation_pro)
+            next_routes.append(ind_1)
+            next_routes.append(ind_2)
+        
+        # update
+        routes = next_routes
+        evaluate_value, best_value = evaluate(position, next_routes, loop + 1)
+        best_value_list.append(best_value)
+        print("最適解: %f" %(min(best_value_list)))
+
+if __name__ == '__main__':
+    main()
 
     
